@@ -60,6 +60,7 @@ pub fn calc<T: Eq + AStarNode + Hash + Copy>(start: T) -> Option<i64> {
                     break Some(passed);
                 }
             };*/
+            todo!("Predecessor");
             return Some(current.value);
         }
         if closed.contains(&current) {
