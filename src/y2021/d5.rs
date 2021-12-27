@@ -1,31 +1,19 @@
-use ming_xu::{ parser, grid::Sparse2d };
-use ming_xu::grid::GridElement;
+use ming_xu::{ parser, grid::Sparse };
 
 pub fn run() -> (usize, usize) {
-    let mut grid = Sparse2d::new(0);
-    let input = parser::get_nested_integer_array(2021, 5, "\r\n", " -> ", ",");
-    for i in input {
-        if i[0][0] == i[1][0] {
-            if i[0][1] > i[1][1] {
-                for y in i[1][1]..=i[0][1] {
-                    *grid.get_mut_or_insert_default(i[0][0], y) += 1;
-                }
-            } else {
-                for y in i[0][1]..=i[1][1] {
-                    *grid.get_mut_or_insert_default(i[0][0], y) += 1;
-                }
-            }
-        } else if i[0][1] == i[1][1] {
-            if i[0][0] > i[1][0] {
-                for x in i[1][0]..=i[0][0] {
-                    *grid.get_mut_or_insert_default(x, i[0][1]) += 1;
-                }
-            } else {
-                for x in i[0][0]..=i[1][0] {
-                    *grid.get_mut_or_insert_default(x, i[0][1]) += 1;
-                }
-            }
+    let start=  std::time::SystemTime::now();
+    let mut grid = Sparse::new(2, 0);
+    let is_diagonal = | i: &Vec<Vec<i64>> | i[0][0] != i[1][0] && i[0][1] != i[1][1];
+    let mut p1= usize::MAX;
+    let mut input = parser::get_nested_integer_array(2021, 5, " -> ", ",");
+    input.sort_by_key(| i | if is_diagonal(i) { 1 } else { 0 });
+    input.iter().for_each(| i | {
+        if is_diagonal(i) && p1 == usize::MAX {
+            p1 = grid.count_if(| v | v >= 2);
+            println!("{}ms", start.elapsed().unwrap().as_millis());
         }
-    }
-    (grid.into_iter().filter(| GridElement { v, .. } | *v >= 2).count(), 16925)
+        grid.edit_line(&vec![i[0][0], i[0][1]], &vec![i[1][0], i[1][1]], | v | *v += 1);
+    });
+    println!("{}ms", start.elapsed().unwrap().as_millis());
+    (p1, grid.count_if(| v | v >= 2))
 }
