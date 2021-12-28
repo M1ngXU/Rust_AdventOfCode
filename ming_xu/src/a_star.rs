@@ -1,81 +1,83 @@
-use std::collections::{ BinaryHeap, HashSet };
-use std::cmp::{ Eq, PartialEq, PartialOrd, Ordering };
+use std::collections::{ BinaryHeap, HashMap };
+use std::cmp::{ Eq, PartialEq, PartialOrd, Ordering, Ord };
 use std::option::Option;
-use std::hash::{ Hash, Hasher };
+use std::hash::Hash;
 
-struct Node<'a, T: AStarNode + Copy> {
+#[cfg(test)]
+mod test;
+
+struct Node<T> {
     situation: T,
-    value: i64,
-    predecessor: Option<&'a Node<'a, T>>
+    cost: i64
 }
-
-pub trait AStarNode {
-    fn get_successor_nodes(&self) -> Vec<(Self, i64)> where Self: Sized;
-    fn is_goal(&self) -> bool;
-}
-
-//<editor-fold desc="Ordering & Equals implementations">
-impl<'a, T: Eq + AStarNode + Copy> Ord for Node<'a, T> {
+//<editor-fold desc="Implementations of standard traits for Node.">
+impl<T: Eq> Ord for Node<T> {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.value.cmp(&self.value)
+        other.cost.cmp(&self.cost)
     }
 }
-impl<'a, T: Eq + AStarNode + Copy> PartialOrd for Node<'a, T> {
+impl<T: Eq> PartialOrd for Node<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(&other))
     }
 }
-impl<'a, T: Eq + AStarNode + Copy> PartialEq for Node<'a, T> {
+impl<T: Eq> PartialEq for Node<T> {
     fn eq(&self, other: &Self) -> bool {
-        self.value == other.value && self.situation == other.situation
+        self.cost == other.cost
     }
 }
-impl<'a, T: Eq + AStarNode + Copy> Eq for Node<'a, T> {}
-impl<'a, T: Eq + AStarNode + Hash + Copy> Hash for Node<'a, T> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.situation.hash(state);
-        self.value.hash(state);
-    }
-}
+impl<T: Eq> Eq for Node<T> {}
 //</editor-fold>
 
-pub fn calc<T: Eq + AStarNode + Hash + Copy>(start: T) -> Option<i64> {
-    let mut open = BinaryHeap::new();
-    let mut closed = HashSet::new();
+pub fn shortest_path<T: Eq + Hash + Clone + Copy>(
+    start: T,
+    is_destination: impl Fn(&T) -> bool,
+    get_successor_situations: impl Fn(&T) -> Vec<(i64, T)>
+) -> Option<(i64, Vec<(i64, T)>)> {
+    let mut to_be_visited = BinaryHeap::new();
+    let mut situations = HashMap::new();
 
-    open.push(Node {
+    situations.insert(start, (0, None));
+
+    to_be_visited.push(Node {
         situation: start,
-        value: 0,
-        predecessor: None
+        cost: 0
     });
 
-    while let Some(current) = open.pop() {
-        if current.situation.is_goal() {
-            /*let mut passed = Vec::new();
-            let last = current;
-            return loop {
-                if let Some(last) = last.predecessor {
-                    passed.push((last.situation, last.value));
-                } else {
-                    break Some(passed);
-                }
-            };*/
-            todo!("Predecessor");
-            return Some(current.value);
-        }
-        if closed.contains(&current) {
+    while let Some(current_node) = to_be_visited.pop() {
+        let cost = current_node.cost;
+        if cost > situations.get(&current_node.situation).unwrap().0 {
             continue;
         }
 
-        current.situation
-            .get_successor_nodes().into_iter()
-            .for_each(| (s, v) | open.push(Node {
-                situation: s,
-                value: current.value + v,
-                predecessor: None
-            }));
+        if is_destination(&current_node.situation) {
+            let mut passed = Vec::new();
+            let mut c = current_node.situation;
+            while let Some(t) = situations.get(&c) {
+                passed.push((t.0, c));
+                if let Some(u) = t.1 {
+                    c = u;
+                } else {
+                    break;
+                }
+            }
+            passed.reverse();
+            return Some((cost, passed));
+        }
 
-        closed.insert(current);
+        for (cost_to_next, successor_situation) in get_successor_situations(&current_node.situation) {
+            let cost_to_node = cost + cost_to_next;
+            match situations.get(&successor_situation) {
+                Some(n) if (*n).0 <= cost_to_node => {},
+                _ => {
+                    situations.insert(successor_situation, (cost_to_node, Some(current_node.situation)));
+                    to_be_visited.push(Node {
+                        situation: successor_situation,
+                        cost: cost_to_node
+                    });
+                }
+            }
+        }
     }
     None
 }

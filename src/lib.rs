@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod y2021 {
-    mod d5;
+    mod d15;
 
     #[test]
     fn results() {
-        assert_eq!(d5::run(), (5147, 16925));
+        assert_eq!(d15::run(), (562, 2874));
     }
 }

@@ -1,7 +1,7 @@
 use ming_xu::{ parser, grid::Sparse };
 
 pub fn run() -> (usize, usize) {
-    let start=  std::time::SystemTime::now();
+    let start =  std::time::SystemTime::now();
     let mut grid = Sparse::new(2, 0);
     let is_diagonal = | i: &Vec<Vec<i64>> | i[0][0] != i[1][0] && i[0][1] != i[1][1];
     let mut p1= usize::MAX;
