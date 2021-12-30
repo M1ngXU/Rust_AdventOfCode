@@ -1,32 +1,37 @@
 use std::collections::HashMap;
+use std::default::default;
 use std::hash::Hash;
+use std::ops::Add;
 
-#[cfg(test)]
-mod test;
-
-pub fn get<T: Copy + Eq + Hash>(
+pub fn get<T, N>(
     start: T,
-    is_destination: &impl Fn(&T) -> bool,
-    get_successor_situations: &impl Fn(&T) -> Vec<(i64, T)>
-) -> u64 {
+    is_destination: &impl Fn(&T) -> Option<N>,
+    get_successor_situations: &impl Fn(&T) -> Vec<T>
+) -> N where
+    T: Clone + Eq + Hash,
+    N: Clone + Add<Output = N> + Default
+{
     get_amount(start, &mut HashMap::new(), &is_destination, &get_successor_situations)
 }
 
-fn get_amount<T: Copy + Eq + Hash>(
+fn get_amount<T, N>(
     current: T,
-    visited: &mut HashMap<T, u64>,
-    is_destination: &impl Fn(&T) -> bool,
-    get_successor_situations: &impl Fn(&T) -> Vec<(i64, T)>
-) -> u64 {
+    visited: &mut HashMap<T, N>,
+    is_destination: &impl Fn(&T) -> Option<N>,
+    get_successor_situations: &impl Fn(&T) -> Vec<T>
+) -> N where
+    T: Clone + Eq + Hash,
+    N: Clone + Add<Output = N> + Default
+{
     if !visited.contains_key(&current) {
         let v = {
-            if is_destination(&current) {
-                1
+            if let Some(d) = is_destination(&current) {
+                d
             } else {
-                get_successor_situations(&current).into_iter().map(| (_, s) | get_amount(s, visited, is_destination, get_successor_situations)).sum()
+                get_successor_situations(&current).into_iter().map(| s | get_amount(s, visited, is_destination, get_successor_situations)).fold(default(), | a, s | a + s)
             }
         };
-        visited.insert(current, v);
+        visited.insert(current.clone(), v);
     }
-    *visited.get(&current).unwrap()
+    visited.get(&current).unwrap().clone()
 }

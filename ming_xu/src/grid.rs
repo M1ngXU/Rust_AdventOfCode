@@ -43,20 +43,12 @@ impl<T: Copy> Sparse<T> {
 
     /// Get a immutable cell
     pub fn get(&self, coord: &Vec<i64>) -> Option<&T> {
-        if self.contains(coord) {
-            self.data.get(coord)
-        } else {
-            None
-        }
+        self.data.get(coord)
     }
 
     /// Get a mutable version for cell
     pub fn get_mut(&mut self, coord: &Vec<i64>) -> Option<&mut T> {
-        if self.contains(coord) {
-            self.data.get_mut(coord)
-        } else {
-            None
-        }
+        self.data.get_mut(coord)
     }
 
     /// returns all elements (or default values) in a line, must be 0 or 45 degree
